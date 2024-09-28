@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %} Пользователь {% endblock %}
+
+{% block content %}
+<div class="user_info">
+    <p><strong>Фамилия: </strong>{{ user_info.surname }}</p>
+    <p><strong>Имя: </strong>{{ user_info.name }}</p>
+    <p><strong>Отчество: </strong>{{ user_info.middle_name }}</p>
+    <p><strong>Дата рождения: </strong>{{ user_info.birth_date }}</p>
+    <p><strong>Электронная почта: </strong>{{ user_info.email }}</p>
+</div>
+{% endblock %}

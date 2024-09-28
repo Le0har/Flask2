@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %} Имена {% endblock %}
+
+{% block content %}
+<ol class="names">
+    {% for name in people_names %}
+        <li>Имя: {{ name }}</li>
+    {% endfor %}
+</ol>
+{% endblock %}

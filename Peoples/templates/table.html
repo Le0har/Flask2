@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %} Таблица {% endblock %}
+
+{% block content %}
+    <table border="1" cellspacing="0">
+        <tr>
+            <th>Фамилия</th>
+            <th>Имя</th>
+            <th>Отчество</th>
+        </tr>
+        {% for element in people_datas %}
+        <tr>
+            <td>{{ element.surname }}</td>
+            <td>{{ element.name }}</td>
+            <td>{{ element.middle_name }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}
