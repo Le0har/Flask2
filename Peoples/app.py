@@ -42,9 +42,9 @@ def get_names():
 def get_table():
     datas = []
     with open('./files/humans.txt', encoding='utf-8') as f:
+        keys = ['surname', 'name', 'middle_name']
         for raw_line in f:
             data = raw_line.strip().split(',')
-            keys = ['surname', 'name', 'middle_name']
             element = {}
             for i in range(len(data)):
                 element[keys[i]] = data[i]
