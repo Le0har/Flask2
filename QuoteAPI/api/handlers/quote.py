@@ -1,3 +1,4 @@
+from marshmallow import ValidationError
 from api import db, app
 from api.models.quote import QuoteModel
 from api.models.author import AuthorModel
@@ -7,6 +8,7 @@ from . import validate
 from sqlalchemy.exc import InvalidRequestError
 from http import HTTPStatus
 from sqlalchemy import func
+from api.schemas.quote import quote_schema, quotes_schema, quote_without_rating
 
 
 # URL: /quotes
@@ -14,10 +16,7 @@ from sqlalchemy import func
 def get_quotes() -> list[dict[str, Any]]:
     """ Функция неявно преобразовывает список словарей в JSON."""
     quotes_db = db.session.scalars(db.select(QuoteModel)).all()
-    quotes = []
-    for quote in quotes_db:
-        quotes.append(quote.to_dict())
-    return jsonify(quotes), 200
+    return jsonify(quotes_schema.dump(quotes_db)), 200
 
 
 # URL: /authors/1/quotes
@@ -27,60 +26,56 @@ def get_author_quotes(author_id):
     author = db.session.get(AuthorModel, author_id)
     quotes = []
     for quote in author.quotes:
-        quotes.append(quote.to_dict())
+        quotes.append(quote)
     
-    return jsonify(author=author.to_dict() | {"quotes": quotes}), 200
+    return jsonify(quotes_schema.dump(quotes)), 200
 
 
 @app.route("/quotes/<int:quote_id>")
 def get_quote(quote_id: int) -> dict:
     """ Функция возвращает цитату по значению ключа id=quote_id."""
     quote = db.get_or_404(QuoteModel, quote_id)
-    return jsonify(quote.to_dict()), HTTPStatus.OK
+    return jsonify(quote_schema.dump(quote)), HTTPStatus.OK
 
 
 @app.route("/authors/<int:author_id>/quotes", methods=['POST'])
 def create_quote(author_id):
-    raw_data = request.json
-    data = validate(raw_data)
+    try:
+        data = quote_schema.loads(request.data)
+    except ValidationError as ve:
+        abort(400, f'Validation error: {str(ve)}')
+        
     author = db.get_or_404(AuthorModel, author_id)
+
     try:
         quote = QuoteModel(author, **data)
         db.session.add(quote)
         db.session.commit()
     except Exception as e:
-        abort(503, f"error: {str(e)}")
-    except TypeError:
-        return (
-            (
-                "Invalid data. Required: author, text, rating (optional). "
-                f"Received: {', '.join(data.keys())}"
-            ),
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    return quote.to_dict(), HTTPStatus.CREATED
+        db.session.rollback()
+        abort(503, f"Database error: {str(e)}")
+    return quote_schema.dump(quote), HTTPStatus.CREATED
 
 
 @app.route("/quotes/<int:quote_id>", methods=["PUT"])
 def edit_quote(quote_id):
     quote: QuoteModel = db.get_or_404(QuoteModel, quote_id)
 
-    raw_data: dict = request.json
-    data = validate(raw_data)
-
-    if len(data) == 0:
-        return "No valid data to update", HTTPStatus.BAD_REQUEST
-
     try:
+        data = quote_schema.loads(request.data)
+    except ValidationError as ve:
+        data = quote_without_rating(request.data)
+
         for key, value in data.items():
-            if not hasattr(quote, key):
-                raise Exception(f"Invalid key: {key}. Valid: author, text, rating")
             setattr(quote, key, value)
+
+    try:    
         db.session.commit()
-        return quote.to_dict(), 200
     except Exception as e:
-        return str(e), HTTPStatus.BAD_REQUEST
+        db.session.rollback()
+        abort(503, f'Database error: {str(e)}')
+
+    return jsonify(quote_schema.dump(quote)), 200
 
 
 @app.route("/quotes/<int:quote_id>", methods=["DELETE"])
@@ -111,10 +106,10 @@ def filter_quotes():
         return (
             (
                 "Invalid data. Possible keys: author, text, rating. "
-                f"Received: {', '.join(request.args.keys())}"
+                f"Received: {', '.join(data.keys())}"
             ),
             HTTPStatus.BAD_REQUEST,
         )
     except Exception as e:
         abort(503, f'Database error: {str(e)}')
-    return jsonify([quote.to_dict() for quote in quotes]), 200
+    return jsonify(quotes_schema.dump(quotes)), 200
