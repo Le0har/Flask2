@@ -1,5 +1,5 @@
 from marshmallow import ValidationError
-from api import db, app
+from api import db, app, multi_auth
 from api.models.quote import QuoteModel
 from api.models.author import AuthorModel
 from typing import Any
@@ -39,6 +39,7 @@ def get_quote(quote_id: int) -> dict:
 
 
 @app.route("/authors/<int:author_id>/quotes", methods=['POST'])
+@multi_auth.login_required
 def create_quote(author_id):
     try:
         data = quote_schema.loads(request.data)

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1> Welcome to Quotes project!</h1>
+
+    {% if session.username %}
+        <h3>Hello, {{ session.username }}!</h3>
+        <a href="{{ url_for('auth.logout') }}"> Click to here to logout </a>
+    {% else %}
+        Click to <a href="{{ url_for('auth.login') }}"> login </a> or <a href="{{ url_for('auth.register') }}"> register </a>
+    {% endif %}
+
+{% endblock  %}

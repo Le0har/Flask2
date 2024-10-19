@@ -1,4 +1,4 @@
-from api import app, db
+from api import app, db, multi_auth
 from api.models.author import AuthorModel # type: ignore
 from flask import abort, jsonify, request
 from http import HTTPStatus
@@ -12,6 +12,7 @@ def get_authors():
 
 
 @app.route('/authors', methods=['POST'])
+@multi_auth.login_required
 def create_author():
     try:
         # author_data = request.json # get_json()
@@ -34,6 +35,7 @@ def get_author_by_id(author_id):
 
 
 @app.route("/authors/<int:author_id>", methods=["PUT"])
+@multi_auth.login_required
 def edit_author(author_id):
     author: AuthorModel = db.get_or_404(AuthorModel, author_id, description=f'Author with id={author_id} not found')
 
